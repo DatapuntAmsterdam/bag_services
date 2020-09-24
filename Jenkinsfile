@@ -75,11 +75,9 @@ if (BRANCH == "gob_only_imports") {
 //    }
 }
 
-if (BRANCH == "test") {
+if (BRANCH == "master") {
 
-
-
-    node {
+   node {
         stage('Push test image') {
             tryStep "image tagging", {
                 docker.withRegistry("${DOCKER_REGISTRY_HOST}",'docker_registry_auth') {
@@ -103,9 +101,7 @@ if (BRANCH == "test") {
             }
         }
     }
-}
 
-if (BRANCH == "master") {
 
     stage("Build image") {
         tryStep "build", {

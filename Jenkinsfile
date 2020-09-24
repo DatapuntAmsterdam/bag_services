@@ -74,8 +74,17 @@ if (BRANCH == "gob_only_imports") {
 //        }
 //    }
 }
-
 if (BRANCH == "master") {
+    
+
+    stage("Build image") {
+        tryStep "build", {
+                docker.withRegistry("${DOCKER_REGISTRY_HOST}",'docker_registry_auth') {
+                def image = docker.build("datapunt/bag_v11:${env.BUILD_NUMBER}")
+                image.push()
+            }
+        }
+    }
 
    node {
         stage('Push test image') {
@@ -101,17 +110,6 @@ if (BRANCH == "master") {
             }
         }
     }
-
-
-    stage("Build image") {
-        tryStep "build", {
-                docker.withRegistry("${DOCKER_REGISTRY_HOST}",'docker_registry_auth') {
-                def image = docker.build("datapunt/bag_v11:${env.BUILD_NUMBER}")
-                image.push()
-            }
-        }
-    }
-
 
 
     node {

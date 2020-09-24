@@ -75,6 +75,36 @@ if (BRANCH == "gob_only_imports") {
 //    }
 }
 
+if (BRANCH == "test") {
+
+
+
+    node {
+        stage('Push test image') {
+            tryStep "image tagging", {
+                docker.withRegistry("${DOCKER_REGISTRY_HOST}",'docker_registry_auth') {
+                    def image = docker.image("datapunt/bag_v11:${env.BUILD_NUMBER}")
+                    image.pull()
+                    image.push("test")
+                }
+            }
+        }
+    }
+
+    node {
+        stage("Deploy to TEST") {
+            tryStep "deployment", {
+                build job: 'Subtask_Openstack_Playbook',
+                parameters: [
+                    [$class: 'StringParameterValue', name: 'INVENTORY', value: 'test'],
+                    [$class: 'StringParameterValue', name: 'PLAYBOOK', value: "${PLAYBOOK}"],
+                    [$class: 'StringParameterValue', name: 'PLAYBOOKPARAMS', value: "-e cmdb_id=app_bag_v11"],
+                ]
+            }
+        }
+    }
+}
+
 if (BRANCH == "master") {
 
     stage("Build image") {
@@ -85,6 +115,8 @@ if (BRANCH == "master") {
             }
         }
     }
+
+
 
     node {
         stage('Push acceptance image') {

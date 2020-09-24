@@ -75,7 +75,7 @@ if (BRANCH == "gob_only_imports") {
 //    }
 }
 
-if (BRANCH == "test") {}
+if (BRANCH == "test") {
 
     stage("Build image") {
         tryStep "build", {

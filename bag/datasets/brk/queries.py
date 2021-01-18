@@ -22,7 +22,7 @@ BRK_OBJECT = settings.ELASTIC_INDICES['BRK_OBJECT']
 BRK_SUBJECT = settings.ELASTIC_INDICES['BRK_SUBJECT']
 
 
-def kadastraal_object_query(analyzer: QueryAnalyzer) -> Search:
+def kadastraal_object_query(analyzer: QueryAnalyzer, features: int = 0) -> Search:
     """
     Create query/aggregation for kadaster object search
 

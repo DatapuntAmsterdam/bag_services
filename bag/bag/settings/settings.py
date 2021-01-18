@@ -250,3 +250,5 @@ if SENTRY_DSN:
         environment='bag_services',
         ignore_errors=['ExpiredSignatureError']
     )
+
+FEATURE_2 = 2

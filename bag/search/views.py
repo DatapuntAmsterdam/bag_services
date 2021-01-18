@@ -205,6 +205,7 @@ def get_specialized_query_selectors(q_select: AbstractSet[str]) -> List[dict]:
 def find_specialized_queries(
     q_select: AbstractSet[str],
     analyzer: QueryAnalyzer,
+    features: int
 ) -> List[CallableQueryFunction]:
     """
     Find specialized queries for a search term.
@@ -230,7 +231,7 @@ def find_specialized_queries(
     return queries
 
 
-def find_default_queries(q_select) -> List[Search]:
+def find_default_queries(q_select, features:int = 0) -> List[Search]:
     """
     return the default queries.
     filter by selected queries if set
@@ -254,7 +255,8 @@ def find_default_queries(q_select) -> List[Search]:
 def select_queries(
         query_string: str,
         analyzer: QueryAnalyzer,
-        q_select: AbstractSet[str] = None) -> List[Search]:
+        q_select: AbstractSet[str] = None,
+        features: int = 0) -> List[Search]:
     """
     Looks at the query string being filled and tries
     to make conclusions about what is actually being searched.
@@ -268,15 +270,15 @@ def select_queries(
         return []
 
     # Filter on selected services, and return those queries.
-    queries = find_specialized_queries(q_select, analyzer)
+    queries = find_specialized_queries(q_select, analyzer, features)
 
     # Checking for a case in which no matches are found.
     # In which case, defaulting to address/openbare ruimte
     if not queries:
         log.debug("No specialized queries for '%s', using defaults", query_string)
-        queries = find_default_queries(q_select)
+        queries = find_default_queries(q_select, features)
 
-    return [q(analyzer) for q in queries]
+    return [q(analyzer, features) for q in queries]
 
 
 def _get_doc_attr(hit, attribute, default):
@@ -389,6 +391,7 @@ class TypeaheadViewSet(viewsets.ViewSet):
     """
     metadata_class = QueryMetadata
     renderer_classes = rest.DEFAULT_RENDERERS
+    features = 0
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -407,7 +410,7 @@ class TypeaheadViewSet(viewsets.ViewSet):
 
         # get the relevant queries
         analyzer = QueryAnalyzer(query)
-        query_components = select_queries(query, analyzer, q_select or set())
+        query_components = select_queries(query, analyzer, q_select or set(), self.features)
 
         authorized_queries = self.authorized_queries(request, analyzer)
         # if you are authorized to look for names
@@ -524,6 +527,9 @@ class TypeaheadViewSet(viewsets.ViewSet):
               paramType: query
         """
         query = request.query_params.get('q')
+        if 'features' in request.query_params:
+            features = request.query_params['features']
+            self.features = int(features) if features.isdigit() else 0
 
         if not query:
             return Response([])
@@ -653,6 +659,7 @@ class SearchViewSet(viewsets.ViewSet):
     page_size = 100
     url_name = 'search-list'
     page_limit = 10
+    features = 0
 
     renderer_classes = rest.DEFAULT_RENDERERS
     filter_backends = [QFilter]
@@ -707,6 +714,10 @@ class SearchViewSet(viewsets.ViewSet):
 
         if 'q' not in request.query_params:
             return Response([])
+
+        if 'features' in request.query_params:
+            features = request.query_params['features']
+            self.features = int(features) if features.isdigit() else 0
 
         page = 1
         if 'page' in request.query_params:
@@ -1002,7 +1013,7 @@ class SearchOpenbareRuimteViewSet(SearchViewSet):
         elif analyzer.is_landelijk_id_prefix():
             search_data = bag_qs.landelijk_id_openbare_ruimte_query(analyzer, subtype)
         else:
-            search_data = bag_qs.openbare_ruimte_query(analyzer, subtype)
+            search_data = bag_qs.openbare_ruimte_query(analyzer, self.features, subtype)
 
         return search_data.using(elk_client)
 
@@ -1083,7 +1094,7 @@ class SearchNummeraanduidingViewSet(SearchViewSet):
             q = bag_qs.postcode_huisnummer_query(analyzer)
 
         elif analyzer.is_straatnaam_huisnummer_prefix():
-            q = bag_qs.straatnaam_huisnummer_query(analyzer)
+            q = bag_qs.straatnaam_huisnummer_query(analyzer, self.features)
 
 
         elif analyzer.is_landelijk_id_prefix():

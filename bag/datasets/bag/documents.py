@@ -320,6 +320,9 @@ def from_nummeraanduiding_ruimte(n: models.Nummeraanduiding) -> Nummeraanduiding
         pass
 
     doc._display = n.adres()
+    if n.landelijk_id.startswith("0457"):  # Weesp
+        # TODO : Only add Weesp if openbare_ruimte naam exists for Amsterdam
+        doc._display += " (Weesp)"
 
     return doc
 
@@ -345,6 +348,9 @@ def from_openbare_ruimte(o: models.OpenbareRuimte):
     d.postcode = list(postcodes)
     d.order = analyzers.orderings['openbare_ruimte']
     d._display = d.naam
+    if o.landelijk_id.startswith("0457"):  # Weesp
+        # TODO : Only add Weesp if openbare_ruimte naam exists for Amsterdam
+        d._display += " (Weesp)"
 
     d.centroid = get_centroid(o.geometrie, 'wgs84')
 
